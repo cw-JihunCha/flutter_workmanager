@@ -224,7 +224,7 @@ object WM {
             }
             .build()
 //        context.workManager().
-        context.workManager()
+        WorkManager.getInstance(context)
             .enqueueUniqueWork(uniqueName, existingWorkPolicy, oneOffTaskRequest)
     }
 
@@ -267,6 +267,7 @@ object WM {
                 .build()
         context.workManager()
             .enqueueUniquePeriodicWork(uniqueName, existingWorkPolicy, periodicTaskRequest)
+//        context.workManager().call
     }
 
     private fun buildTaskInputData(
