@@ -1,6 +1,7 @@
 package dev.fluttercommunity.workmanager
 
 import android.content.Context
+import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -14,6 +15,7 @@ import dev.fluttercommunity.workmanager.BackgroundWorker.Companion.IS_IN_DEBUG_M
 import dev.fluttercommunity.workmanager.BackgroundWorker.Companion.PAYLOAD_KEY
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 private fun Context.workManager() = WorkManager.getInstance(this)
@@ -31,21 +33,25 @@ class WorkmanagerCallHandler(private val ctx: Context) : MethodChannel.MethodCal
                 extractedCall,
                 result
             )
+
             is WorkManagerCall.RegisterTask -> RegisterTaskHandler.handle(
                 ctx,
                 extractedCall,
                 result
             )
+
             is WorkManagerCall.CancelTask -> UnregisterTaskHandler.handle(
                 ctx,
                 extractedCall,
                 result
             )
+
             is WorkManagerCall.Failed -> FailedTaskHandler(extractedCall.code).handle(
                 ctx,
                 extractedCall,
                 result
             )
+
             is WorkManagerCall.Unknown -> UnknownTaskHandler.handle(ctx, extractedCall, result)
         }
     }
@@ -57,6 +63,13 @@ private object InitializeHandler : CallHandler<WorkManagerCall.Initialize> {
         convertedCall: WorkManagerCall.Initialize,
         result: MethodChannel.Result
     ) {
+        val configuration = Configuration.Builder()
+            // Defines a thread pool with 10 threads.
+            // Ideally you would choose a number that is dynamic based on the number
+            // of cores on the device.
+            .setExecutor(Executors.newFixedThreadPool(10))
+            .build()
+        WorkManager.initialize(context, configuration)
         SharedPreferenceHelper.saveCallbackDispatcherHandleKey(
             context,
             convertedCall.callbackDispatcherHandleKey
@@ -75,15 +88,15 @@ private object RegisterTaskHandler : CallHandler<WorkManagerCall.RegisterTask> {
             result.error(
                 "1",
                 "You have not properly initialized the Flutter WorkManager Package. " +
-                    "You should ensure you have called the 'initialize' function first! " +
-                    "Example: \n" +
-                    "\n" +
-                    "`Workmanager().initialize(\n" +
-                    "  callbackDispatcher,\n" +
-                    " )`" +
-                    "\n" +
-                    "\n" +
-                    "The `callbackDispatcher` is a top level function. See example in repository.",
+                        "You should ensure you have called the 'initialize' function first! " +
+                        "Example: \n" +
+                        "\n" +
+                        "`Workmanager().initialize(\n" +
+                        "  callbackDispatcher,\n" +
+                        " )`" +
+                        "\n" +
+                        "\n" +
+                        "The `callbackDispatcher` is a top level function. See example in repository.",
                 null
             )
             return
@@ -150,6 +163,7 @@ private object UnregisterTaskHandler : CallHandler<WorkManagerCall.CancelTask> {
                 context,
                 convertedCall.uniqueName
             )
+
             is WorkManagerCall.CancelTask.ByTag -> WM.cancelByTag(context, convertedCall.tag)
             WorkManagerCall.CancelTask.All -> WM.cancelAll(context)
         }
@@ -209,6 +223,7 @@ object WM {
                 outOfQuotaPolicy?.let(::setExpedited)
             }
             .build()
+//        context.workManager().
         context.workManager()
             .enqueueUniqueWork(uniqueName, existingWorkPolicy, oneOffTaskRequest)
     }
