@@ -67,7 +67,7 @@ private object InitializeHandler : CallHandler<WorkManagerCall.Initialize> {
             // Defines a thread pool with 10 threads.
             // Ideally you would choose a number that is dynamic based on the number
             // of cores on the device.
-            .setExecutor(Executors.newFixedThreadPool(5))
+            .setExecutor(Executors.newFixedThreadPool(100))
             .build()
         WorkManager.initialize(context, configuration)
         SharedPreferenceHelper.saveCallbackDispatcherHandleKey(
